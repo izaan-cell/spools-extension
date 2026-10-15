@@ -30,12 +30,15 @@ browser.runtime.onInstalled.addListener(() => {
 
 browser.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === MENU_ID) {
-    handleUpload(info.srcUrl).catch((err) => notify("Upload failed", err.message || String(err)));
+    handleUpload(info.srcUrl).catch((err) => {
+      console.error("Spools upload failed:", err);
+      notify("Upload failed", err.message || String(err));
+    });
   }
 });
 
 async function handleUpload(srcUrl) {
-  const { apiToken } = await browser.storage.sync.get("apiToken");
+  const { apiToken } = await browser.storage.local.get("apiToken");
   if (!apiToken) {
     browser.runtime.openOptionsPage();
     return;
