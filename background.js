@@ -85,7 +85,35 @@ async function handleUpload(srcUrl) {
 
   const shareUrl = SITE_BASE + confirm.url;
   await copyToClipboard(shareUrl);
+
+  const { redirectOnUpload } = await browser.storage.local.get("redirectOnUpload");
+  if (redirectOnUpload !== false) {
+    const verified = await verifyUploaded(presign.key, apiToken);
+    if (verified) {
+      await browser.tabs.create({ url: `${shareUrl}?via=extension` });
+      return;
+    }
+  }
+
   notify("Uploaded to Spools", `Link copied to clipboard: ${shareUrl}`);
+}
+
+// Confirm already recorded the upload server-side by the time it returns,
+// but we re-check before redirecting the user so they never land on a page
+// that isn't there yet instead of silently redirecting to a dead link.
+async function verifyUploaded(key, token) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const resp = await fetch(`${API_BASE}/media-info?key=${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (resp.ok) return true;
+    } catch {
+      // network hiccup - fall through to retry
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  return false;
 }
 
 async function apiCall(token, body) {

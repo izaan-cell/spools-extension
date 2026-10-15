@@ -1,8 +1,10 @@
 const tokenInput = document.getElementById("token");
 const status = document.getElementById("status");
+const redirectCheckbox = document.getElementById("redirect");
 
-browser.storage.local.get("apiToken").then(({ apiToken }) => {
+browser.storage.local.get(["apiToken", "redirectOnUpload"]).then(({ apiToken, redirectOnUpload }) => {
   if (apiToken) tokenInput.value = apiToken;
+  redirectCheckbox.checked = redirectOnUpload !== false;
 });
 
 document.getElementById("save").addEventListener("click", async () => {
@@ -11,7 +13,7 @@ document.getElementById("save").addEventListener("click", async () => {
     status.textContent = "That doesn't look like a Spools token (should start with spt_).";
     return;
   }
-  await browser.storage.local.set({ apiToken: value });
+  await browser.storage.local.set({ apiToken: value, redirectOnUpload: redirectCheckbox.checked });
   status.textContent = "Saved.";
   setTimeout(() => (status.textContent = ""), 2000);
 });
